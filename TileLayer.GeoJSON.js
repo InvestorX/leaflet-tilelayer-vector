@@ -21,9 +21,9 @@ L.TileLayer.Ajax = L.TileLayer.extend({
         L.TileLayer.prototype.onRemove.call(this, map);
         this.off('tileunload', this._unloadTile);
     },
-    _addTile: function(tilePoint, container) {
+    _addTile: function(coords, container) {
         var cached = null;
-        var key = tilePoint.x + ':' + tilePoint.y;
+        var key = this._tileCoordsToKey(coords);
         var urlZoom = this._getZoomForUrl();
         var tile = cached = this._tileCache.get(key, urlZoom);
         if (!tile) {
@@ -38,7 +38,7 @@ L.TileLayer.Ajax = L.TileLayer.extend({
         if (cached) {
             this._addTileData(tile);
         } else {
-            this._loadTile(tile, tilePoint);
+            this._loadTile(tile, coords);
         }
     },
     _addTileData: function(tile) {
@@ -68,14 +68,13 @@ L.TileLayer.Ajax = L.TileLayer.extend({
         }
     },
     // Load the requested tile via AJAX
-    _loadTile: function (tile, tilePoint) {
-        this._adjustTilePoint(tilePoint);
+    _loadTile: function (tile, coords) {
         var layer = this;
         var req = new XMLHttpRequest();
         tile._request = req;
         req.onreadystatechange = this._xhrHandler(req, layer, tile);
         this.fire('tilerequest', {tile: tile, request: req});
-        req.open('GET', this.getTileUrl(tilePoint), true);
+        req.open('GET', this.getTileUrl(coords), true);
         req.send();
     },
     _unloadTile: function(evt) {
@@ -85,6 +84,15 @@ L.TileLayer.Ajax = L.TileLayer.extend({
             tile._request = null;
             req.abort();
             this.fire('tilerequestabort', {tile: tile, request: req});
+        }
+    },
+    // TODO _tileLoaded replaced by _tileReady + _visibleTilesReady, 
+    // but cannot use because tile assumed to be component (L.DomUtil.addClass)?
+    _tileLoaded: function () {
+        this._tilesToLoad--;
+
+        if (this._tilesToLoad === 0) {
+            this.fire('load');
         }
     }
 });
