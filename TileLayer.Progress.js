@@ -33,14 +33,16 @@ L.TileLayer.Progress = L.TileLayer.Div.extend({
         this.vectorLayer.off('tileunload', this._onTileLoad, this);
     },
 
-    drawTile: function (tile, tilePoint) {
-        var vecTile, 
-            loading, 
-            key = tilePoint.x + ':' + tilePoint.y;
+    createTile: function (coords) {
+         var tile = document.createElement('div'),
+            key = this._tileCoordsToKey(coords),
+            vectorTile;
 
         tile.style.backgroundColor = 'rgba(128, 128, 128, 0.3)';
         tile.style.border = '1px solid rgba(128, 128, 128, 0.8)';
         tile.style.boxSizing = 'border-box';
+
+        L.DomUtil.addClass(tile, 'leaflet-tile-loaded');
 
         if (!this._loadingTiles[key]) {
             this._hide(tile);
@@ -49,12 +51,17 @@ L.TileLayer.Progress = L.TileLayer.Div.extend({
         // check for already loading tiles, because initial tileloadstart
         // events might have been missed when layer is added
         if (this._adding) {
-            vecTile = this.vectorLayer._tiles[key];
-            loading = vecTile && vecTile.loading;
-            if (loading) {
+            vectorTile = this.vectorLayer._tiles[key];
+            if (vectorTile && vectorTile.loading) {
                 this._show(tile);
             }
         }
+
+        return tile;
+    },
+            
+    _tileReady: function (err, tile) {
+        // override to disable adding leaflet-tile-loaded class
     },
 
     _onVecRemove: function(evt) {
