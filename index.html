@@ -4,9 +4,10 @@
     <title>Leaflet vector tile layer example</title>
     <meta charset="utf-8" />
 
-    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7/leaflet.css" />
+     <link rel="stylesheet" href="bower_components/leaflet/leaflet.css" />
     <link rel="stylesheet" href="http://leaflet.github.io/Leaflet.label/leaflet.label.css" />
-    <script src="http://cdn.leafletjs.com/leaflet-0.7/leaflet.js"></script>
+
+    <script src="bower_components/leaflet/leaflet.js"></script>
     <script src="http://leaflet.github.io/Leaflet.label/leaflet.label.js"></script>
     <script src="lib/communist.min.js"></script>
 
@@ -77,7 +78,8 @@
             mouseout: resetHighlight
         });
         if (feature.properties) {
-            layer.bindLabel(feature.properties.name);
+            // TODO disabled due to error with Leaflet master (0.8-dev)
+            //layer.bindLabel(feature.properties.name);
             layer.bindPopup(feature.id + '<br>' + feature.properties.name);
         }
     }
@@ -125,7 +127,7 @@
     var map = L.map('map', {
         center: new L.LatLng(38.617, -100.261),
         zoom: 5,
-        layers: [background, vector, progress] 
+        layers: [background, vector, progress]
     });
 
     var overlayMaps = {
