@@ -2,44 +2,65 @@
  * Debug layer for L.TileLayer.Vector
  */
 L.TileLayer.Debug = L.TileLayer.Div.extend({
-    initialize: function (vectorLayer) {
-        L.TileLayer.Div.prototype.initialize.call(this, vectorLayer.options);
 
-        this.vectorLayer = vectorLayer;
+    _requestCount: 0,
+
+    initialize: function (vectorLayer) {
+        L.TileLayer.Div.prototype.initialize.call(this, vectorLayer);
     },
 
     onAdd: function (map) {
-        map.on('viewreset', this._updateZoom, this);
-        this.vectorLayer.on('tileload', this._onTileLoad, this);
-        this.vectorLayer.on('tileerror', this._onTileLoad, this);
+        map.on('moveend', this._onMoveend, this);
         L.TileLayer.Div.prototype.onAdd.apply(this, arguments);
     },
 
     onRemove: function (map) {
         L.TileLayer.Div.prototype.onRemove.apply(this, arguments);
-        this.vectorLayer.off('tileload', this._onTileLoad, this);
-        this.vectorLayer.off('tileerror', this._onTileLoad, this);
-        map.off('viewreset', this._updateZoom, this);
+        map.off('moveend', this._onMoveend, this);
     },
 
-    drawTile: function (tile, tilePoint) {
-        tile.style.backgroundColor = 'rgba(128, 128, 128, 0.3)';
-        tile.style.border = '1px solid rgba(128, 128, 128, 0.8)';
+    createTile: function (coords) {
+        var tile = document.createElement('div'),
+            key = this._tileCoordsToKey(coords);
+
+        tile.style.color = 'red';
+        tile.style.border = 'solid rgba(255, 0, 0, 1)';
+        tile.style.borderWidth = '1px 0 0 1px';
+        tile.style.boxSizing = 'border-box';
+        tile.style.MozBoxSizing = 'border-box';
+        
+        tile.innerHTML = [this._getZoomForUrl(), coords.x, coords.y].join('/')
+            + '  ' + '(zoom ' + this._map.getZoom() + ', key ' + key + ')';
+
+        return tile;
     },
 
-    _updateZoom: function() {
-        if (this.options.tileSize != this.vectorLayer.options.tileSize) {
-            this.options.tileSize = this.vectorLayer.options.tileSize;
-            this.options.zoomOffset = this.vectorLayer.options.zoomOffset;
-        }
+    onTileRequest: function(key) {
+        this._requestCount++;
+        console.log('request-start: ' + key + ' - ' + this._requestCount);
     },
 
-    _onTileLoad: function(evt) {
-        var key = evt.tile.key,
-            tile = this._tiles[key];
-        if (tile) {
-            
-        }
+    onTileResponse: function(key) {
+        this._requestCount--;
+        console.log('request-end  : ' + key + ' - ' + this._requestCount);
+
+    },
+
+    onTileRequestAbort: function(key) {
+        this._requestCount--;
+        console.log('request-abort: ' + key + ' - ' + this._requestCount);
+    },
+
+    onTileLoad: function(key) {
+        console.log('loaded       : ' + key);
+    },
+
+    onTileUnload: function(key) {
+        console.log('unload       : ' + key);
+    },
+    
+    _onMoveend: function(evt) {
+        console.log('--- update ---');
     }
 });
 
