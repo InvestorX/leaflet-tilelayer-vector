@@ -26,9 +26,12 @@ configurable modules for tile loading (streams?): e.g. request > worker > queue 
 
 ### Leaflet versions
 
-* current development on dev Branch is already for Leaflet master (0.8-dev)
+* current development on dev Branch is already for Leaflet master (0.8-dev)<br>
 install Leaflet with [bower](https://github.com/bower/bower#installing-bower):
-    bower install
+
+```
+bower install
+```
 * for Leaflet stable (v0.7) and v0.6 see [Tags](https://github.com/nrenner/leaflet-tilelayer-vector/tags)/[Releases](https://github.com/nrenner/leaflet-tilelayer-vector/releases)
 
 ### Usages
