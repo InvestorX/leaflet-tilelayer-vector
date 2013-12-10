@@ -4,9 +4,7 @@ L.TileLayer.Overzoom = {
         // List of available server zoom levels in ascending order. Empty means all  
         // client zooms are available (default). Allows to only request tiles at certain
         // zooms and resizes tiles on the other zooms.
-        serverZooms: [],
-        // workaround: wrapping loads tiles multiple times when zoom < serverZooms[0]
-        noWrap: true
+        serverZooms: []
     },
 
     // override _getTileSize to add serverZooms (when maxNativeZoom is not defined)

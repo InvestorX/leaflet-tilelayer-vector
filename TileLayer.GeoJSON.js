@@ -23,6 +23,7 @@ L.TileLayer.Ajax = L.TileLayer.extend({
     },
     _addTile: function(coords, container) {
         var cached = null;
+        this._wrapCoords(coords);
         var key = this._tileCoordsToKey(coords);
         var urlZoom = this._getZoomForUrl();
         var tile = cached = this._tileCache.get(key, urlZoom);
