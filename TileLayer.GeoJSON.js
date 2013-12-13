@@ -24,6 +24,7 @@ L.TileLayer.Vector = L.TileLayer.extend({
         this._addQueue = new L.TileQueue(L.bind(this._addTileDataInternal, this));
         
     },
+
     onAdd: function (map) {
         L.TileLayer.prototype.onAdd.call(this, map);
 
@@ -38,6 +39,7 @@ L.TileLayer.Vector = L.TileLayer.extend({
         this._worker.onAdd(map);
         this._tileCache.onAdd(map);
     },
+
     onRemove: function (map) {
         // unload tiles (L.TileLayer only calls _reset in onAdd)
         this._reset();
@@ -75,7 +77,7 @@ L.TileLayer.Vector = L.TileLayer.extend({
             this._loadTile(tile, coords);
         }
     },
-    // Load the requested tile via AJAX
+
     _loadTile: function (tile, coords) {
         var url = this.getTileUrl(coords);
         this._tileRequest.get(url, tile, L.bind(function(err, tile) {
@@ -86,6 +88,7 @@ L.TileLayer.Vector = L.TileLayer.extend({
             }
         },this));
     },
+
     // TODO _tileLoaded replaced by _tileReady + _visibleTilesReady, 
     // but cannot use because tile assumed to be component (L.DomUtil.addClass)?
     _tileLoaded: function () {
@@ -99,9 +102,11 @@ L.TileLayer.Vector = L.TileLayer.extend({
     _createVectorLayer: function() {
         return this.options.layerFactory(null, this.vectorOptions);
     },
+
     _createTileLayer: function() {
         return this._createVectorLayer();
     },
+
     _addTileData: function(tile) {
         if (!tile.parsed) {
             this._worker.process(tile, L.bind(function(tile) {
@@ -112,6 +117,7 @@ L.TileLayer.Vector = L.TileLayer.extend({
             this._addQueue.add(tile);
         }
     },
+
     _addTileDataInternal: function(tile) {
         var tileLayer = this._createTileLayer();
         if (!tile.parsed) {
@@ -127,6 +133,7 @@ L.TileLayer.Vector = L.TileLayer.extend({
         this.fire('tileload', {tile: tile});
         this._tileLoaded();
     },
+
     _unloadTile: function(evt) {
         var tile = evt.tile,
             tileLayer = tile.layer;
@@ -150,6 +157,7 @@ L.TileLayer.Vector = L.TileLayer.extend({
             this._tileCache.put(tile);
         }
     },
+
     _reset: function() {
         L.TileLayer.prototype._reset.apply(this, arguments);
         this._addQueue.clear();
