@@ -2,7 +2,9 @@
 L.TileLayer.Ajax = L.TileLayer.extend({
     options: {
         // use L.tileCacheNone to turn caching off
-        tileCacheFactory: L.tileCache
+        tileCacheFactory: L.tileCache,
+        tileRequestFactory: L.tileRequest,
+        ajax: L.Request.get
     },
 
     _tileCache: null,
@@ -11,6 +13,7 @@ L.TileLayer.Ajax = L.TileLayer.extend({
         L.TileLayer.prototype.initialize.call(this, url, options);
         
         this._tileCache = this.options.tileCacheFactory();
+        this._tileRequest = this.options.tileRequestFactory(this, this.options.ajax);
     },
 
     onAdd: function (map) {
@@ -45,47 +48,20 @@ L.TileLayer.Ajax = L.TileLayer.extend({
     _addTileData: function(tile) {
         // override in subclass
     },
-    // XMLHttpRequest handler; closure over the XHR object, the layer, and the tile
-    _xhrHandler: function (req, layer, tile) {
-        return function() {
-            if (req.readyState != 4) {
-                return;
-            }
-            var s = req.status;
-            if ((s >= 200 && s < 300) || s == 304) {
-                // check if request is about to be aborted, avoid rare error when aborted while parsing
-                if (tile._request) {
-                    tile._request = null;
-                    layer.fire('tileresponse', {tile: tile, request: req});
-                    tile.datum = req.responseText;
-                    layer._addTileData(tile);
-                }
-            } else {
-                tile.loading = false;
-                tile._request = null;
-                layer.fire('tileerror', {tile: tile, request: req});
-                layer._tileLoaded();
-            }
-        }
-    },
     // Load the requested tile via AJAX
     _loadTile: function (tile, coords) {
-        var layer = this;
-        var req = new XMLHttpRequest();
-        tile._request = req;
-        req.onreadystatechange = this._xhrHandler(req, layer, tile);
-        this.fire('tilerequest', {tile: tile, request: req});
-        req.open('GET', this.getTileUrl(coords), true);
-        req.send();
+        var url = this.getTileUrl(coords);
+        this._tileRequest.get(url, tile, L.bind(function(err, tile) {
+            if (!err) {
+                this._addTileData(tile);
+            } else {
+                this._tileLoaded();
+            }
+        },this));
     },
     _unloadTile: function(evt) {
-        var tile = evt.tile,
-            req = tile._request;
-        if (req) {
-            tile._request = null;
-            req.abort();
-            this.fire('tilerequestabort', {tile: tile, request: req});
-        }
+        var tile = evt.tile;
+        this._tileRequest.abort(tile);
     },
     // TODO _tileLoaded replaced by _tileReady + _visibleTilesReady, 
     // but cannot use because tile assumed to be component (L.DomUtil.addClass)?
@@ -109,7 +85,9 @@ L.TileLayer.Vector = L.TileLayer.Ajax.extend({
     initialize: function (url, options, vectorOptions) {
         L.TileLayer.Ajax.prototype.initialize.call(this, url, options);
         this.vectorOptions = vectorOptions || {};
-        this._worker = this.options.workerFactory(L.TileLayer.Vector.parseData);
+        // reference to a standalone function that can be stringified for a web worker
+        this._parseData = this.options.parseData || L.TileLayer.Vector.parseData;
+        this._worker = this.options.workerFactory(this._parseData);
         this._addQueue = new L.TileQueue(L.bind(this._addTileDataInternal, this));
     },
     onAdd: function (map) {
@@ -157,7 +135,7 @@ L.TileLayer.Vector = L.TileLayer.Ajax.extend({
         var tileLayer = this._createTileLayer();
         if (!tile.parsed) {
             // when no worker for parsing
-            tile.parsed = L.TileLayer.Vector.parseData(tile.datum);
+            tile.parsed = this._parseData(tile.datum);
             tile.datum = null;
         }
         tileLayer.addData(tile.parsed);
