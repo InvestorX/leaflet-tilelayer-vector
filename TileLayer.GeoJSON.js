@@ -28,8 +28,6 @@ L.TileLayer.Vector = L.TileLayer.extend({
     onAdd: function (map) {
         L.TileLayer.prototype.onAdd.call(this, map);
 
-        this._map = map;
-
         this.on('tileunload', this._unloadTile);
 
         // root vector layer, contains tile vector layers as children 
@@ -53,7 +51,6 @@ L.TileLayer.Vector = L.TileLayer.extend({
         this._tileCache.onRemove(map);
 
         this.vectorLayer = null;
-        this._map = null;
     },
 
     _addTile: function(coords, container) {
