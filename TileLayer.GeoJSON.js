@@ -1,29 +1,59 @@
-// Load data tiles using the JQuery ajax function
-L.TileLayer.Ajax = L.TileLayer.extend({
+L.TileLayer.Vector = L.TileLayer.extend({
     options: {
+        tileRequestFactory: L.tileRequest,
+        ajax: L.Request.get,
         // use L.tileCacheNone to turn caching off
         tileCacheFactory: L.tileCache,
-        tileRequestFactory: L.tileRequest,
-        ajax: L.Request.get
+        // factory function to create the vector tile layers (defaults to L.GeoJSON)
+        layerFactory: L.geoJson,
+        // factory function to create a web worker for parsing/preparing tile data
+        //workerFactory: L.communistWorker
+        workerFactory: L.noWorker
     },
 
-    _tileCache: null,
-
-    initialize: function (url, options) {
+    initialize: function (url, options, vectorOptions) {
         L.TileLayer.prototype.initialize.call(this, url, options);
-        
-        this._tileCache = this.options.tileCacheFactory();
-        this._tileRequest = this.options.tileRequestFactory(this, this.options.ajax);
-    },
 
+        this.vectorOptions = vectorOptions || {};
+
+        this._tileRequest = this.options.tileRequestFactory(this, this.options.ajax);
+        this._tileCache = this.options.tileCacheFactory();
+        // reference to a standalone function that can be stringified for a web worker
+        this._parseData = this.options.parseData || L.TileLayer.Vector.parseData;
+        this._worker = this.options.workerFactory(this._parseData);
+        this._addQueue = new L.TileQueue(L.bind(this._addTileDataInternal, this));
+        
+    },
     onAdd: function (map) {
         L.TileLayer.prototype.onAdd.call(this, map);
+
+        this._map = map;
+
         this.on('tileunload', this._unloadTile);
+
+        // root vector layer, contains tile vector layers as children 
+        this.vectorLayer = this._createVectorLayer(); 
+        map.addLayer(this.vectorLayer);
+
+        this._worker.onAdd(map);
+        this._tileCache.onAdd(map);
     },
     onRemove: function (map) {
+        // unload tiles (L.TileLayer only calls _reset in onAdd)
+        this._reset();
+        map.removeLayer(this.vectorLayer);
+
         L.TileLayer.prototype.onRemove.call(this, map);
+
         this.off('tileunload', this._unloadTile);
+
+        this._worker.onRemove(map);
+        this._tileCache.onRemove(map);
+
+        this.vectorLayer = null;
+        this._map = null;
     },
+
     _addTile: function(coords, container) {
         var cached = null;
         this._wrapCoords(coords);
@@ -45,9 +75,6 @@ L.TileLayer.Ajax = L.TileLayer.extend({
             this._loadTile(tile, coords);
         }
     },
-    _addTileData: function(tile) {
-        // override in subclass
-    },
     // Load the requested tile via AJAX
     _loadTile: function (tile, coords) {
         var url = this.getTileUrl(coords);
@@ -59,10 +86,6 @@ L.TileLayer.Ajax = L.TileLayer.extend({
             }
         },this));
     },
-    _unloadTile: function(evt) {
-        var tile = evt.tile;
-        this._tileRequest.abort(tile);
-    },
     // TODO _tileLoaded replaced by _tileReady + _visibleTilesReady, 
     // but cannot use because tile assumed to be component (L.DomUtil.addClass)?
     _tileLoaded: function () {
@@ -71,50 +94,8 @@ L.TileLayer.Ajax = L.TileLayer.extend({
         if (this._tilesToLoad === 0) {
             this.fire('load');
         }
-    }
-});
-
-L.TileLayer.Vector = L.TileLayer.Ajax.extend({
-    options: {
-        // factory function to create the vector tile layers (defaults to L.GeoJSON)
-        layerFactory: L.geoJson,
-        // factory function to create a web worker for parsing/preparing tile data
-        //workerFactory: L.communistWorker
-        workerFactory: L.noWorker
     },
-    initialize: function (url, options, vectorOptions) {
-        L.TileLayer.Ajax.prototype.initialize.call(this, url, options);
-        this.vectorOptions = vectorOptions || {};
-        // reference to a standalone function that can be stringified for a web worker
-        this._parseData = this.options.parseData || L.TileLayer.Vector.parseData;
-        this._worker = this.options.workerFactory(this._parseData);
-        this._addQueue = new L.TileQueue(L.bind(this._addTileDataInternal, this));
-    },
-    onAdd: function (map) {
-        this._map = map;
-        
-        L.TileLayer.Ajax.prototype.onAdd.call(this, map);
 
-        // root vector layer, contains tile vector layers as children 
-        this.vectorLayer = this._createVectorLayer(); 
-        map.addLayer(this.vectorLayer);
-
-        this._worker.onAdd(map);
-        this._tileCache.onAdd(map);
-    },
-    onRemove: function (map) {
-        // unload tiles (L.TileLayer only calls _reset in onAdd)
-        this._reset();
-        map.removeLayer(this.vectorLayer);
-
-        L.TileLayer.Ajax.prototype.onRemove.call(this, map);
-
-        this._worker.onRemove(map);
-        this._tileCache.onRemove(map);
-
-        this.vectorLayer = null;
-        this._map = null;
-    },
     _createVectorLayer: function() {
         return this.options.layerFactory(null, this.vectorOptions);
     },
@@ -147,10 +128,11 @@ L.TileLayer.Vector = L.TileLayer.Ajax.extend({
         this._tileLoaded();
     },
     _unloadTile: function(evt) {
-        L.TileLayer.Ajax.prototype._unloadTile.apply(this, arguments);
-
         var tile = evt.tile,
             tileLayer = tile.layer;
+
+        this._tileRequest.abort(tile);
+
         if (tile.loading) {
             this._addQueue.remove(tile);
             // not from cache or not loaded and parsed yet
@@ -169,7 +151,7 @@ L.TileLayer.Vector = L.TileLayer.Ajax.extend({
         }
     },
     _reset: function() {
-        L.TileLayer.Ajax.prototype._reset.apply(this, arguments);
+        L.TileLayer.prototype._reset.apply(this, arguments);
         this._addQueue.clear();
         this._worker.clear();
     }
