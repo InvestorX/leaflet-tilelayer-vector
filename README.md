@@ -1,59 +1,39 @@
-# Leaflet GeoJSON Tile Layer
-Renders GeoJSON tiles on an L.GeoJSON layer
+# (Development) Fork 
+of [glenrobertson/leaflet-tilelayer-geojson](https://github.com/glenrobertson/leaflet-tilelayer-geojson)
 
-## Example usage
-The following example shows a GeoJSON Tile Layer for tiles with duplicate features.
+-work in progress-
 
-Features are deduplicated by comparing the result of the `unique` function for each feature.
+### additions to leaflet-tilelayer-geojson:
 
-        var style = {
-            "clickable": true,
-            "color": "#00D",
-            "fillColor": "#00D",
-            "weight": 1.0,
-            "opacity": 0.3,
-            "fillOpacity": 0.2
-        };
-        var hoverStyle = {
-            "fillOpacity": 0.5
-        };
+* based on Leaflet Path vector classes instead of GeoJSON
+* async queue for adding tiles to let UI render each tile immediately
+* remove tiles/vectors outside viewport
+* deduplication for unclipped tiles, remove common features only when no more references
+* overzooming (reuse tiles for multiple zoom levels)
+* loading/progress tiles
+* Web Worker support
 
-        var geojsonURL = 'http://localhost:8000/states/{z}/{x}/{y}.json';
-        var geojsonTileLayer = new L.TileLayer.GeoJSON(geojsonURL, {
-                unique: function (feature) { return feature.id; }
-            }, {
-                style: style,
-                onEachFeature: function (feature, layer) {
-                    if (feature.properties) {
-                        var popupString = '<div class="popup">';
-                        for (var k in feature.properties) {
-                            var v = feature.properties[k];
-                            popupString += k + ': ' + v + '<br />';
-                        }
-                        popupString += '</div>';
-                        layer.bindPopup(popupString);
-                    }
-                    if (!(layer instanceof L.Point)) {
-                        layer.on('mouseover', function () {
-                            layer.setStyle(hoverStyle);
-                        });
-                        layer.on('mouseout', function () {
-                            layer.setStyle(style);
-                        });
-                    }
-                }
-            }
-        );
-        map.addLayer(geojsonTileLayer);
+### Todo
 
+* early adoption of Leaflet master (0.8-dev) refactorings
+* cleanup, refactoring<br>
+configurable modules for tile loading (streams?): e.g. request > worker > queue > add
+* debug layer
+* performance
+* clipped tiles support
+* ...
+* discuss if and what to merge back
 
-## Future development
-Functionality currently being worked on:
-* Re-unioning feature geometries that have been trimmed to tile boundaries
+### Leaflet versions
 
-## Contributors
-Thanks to the following people for helping so far:
+* current development on dev Branch is already for Leaflet master (0.8-dev)<br>
+install Leaflet with [bower](https://github.com/bower/bower#installing-bower):
 
-* [Nelson Minar](https://github.com/NelsonMinar)
-* [Alex Barth](https://github.com/lxbarth)
-* [Pawel Paprota](https://github.com/ppawel)
+```
+bower install
+```
+* for Leaflet stable (v0.7) and v0.6 see [Tags](https://github.com/nrenner/leaflet-tilelayer-vector/tags)/[Releases](https://github.com/nrenner/leaflet-tilelayer-vector/releases)
+
+### Usages
+
+* [Mapsplit map](https://github.com/nrenner/mapsplit-map) using OSM PBF vector tiles.

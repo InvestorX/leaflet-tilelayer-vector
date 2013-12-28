@@ -8,19 +8,12 @@ L.TileLayer.Progress = L.TileLayer.Div.extend({
     _loadingTiles: {},
     
     initialize: function (vectorLayer) {
-        L.TileLayer.Div.prototype.initialize.call(this, vectorLayer.options);
-
-        this.vectorLayer = vectorLayer;
+        L.TileLayer.Div.prototype.initialize.call(this, vectorLayer);
     },
 
     onAdd: function (map) {
         this._adding = true;
-        map.on('viewreset', this._updateZoom, this);
-        map.on('layerremove', this._onVecRemove, this);
-        this.vectorLayer.on('tileloading', this._onTileLoading, this);
-        this.vectorLayer.on('tileload', this._onTileLoad, this);
-        this.vectorLayer.on('tileerror', this._onTileError, this);
-        this.vectorLayer.on('tileunload', this._onTileLoad, this);
+        map.on('layerremove', this._onVectorLayerRemove, this);
         L.TileLayer.Div.prototype.onAdd.apply(this, arguments);
         this._adding = false;
     },
@@ -28,45 +21,41 @@ L.TileLayer.Progress = L.TileLayer.Div.extend({
     onRemove: function (map) {
         L.TileLayer.Div.prototype.onRemove.apply(this, arguments);
         this._loadingTiles = {};
-        this.vectorLayer.off('tileloading', this._onTileLoading, this);
-        this.vectorLayer.off('tileload', this._onTileLoad, this);
-        this.vectorLayer.off('tileerror', this._onTileError, this);
-        this.vectorLayer.off('tileunload', this._onTileLoad, this);
-        map.off('viewreset', this._updateZoom, this);
     },
 
-    drawTile: function (tile, tilePoint) {
-        var vecTile, 
-            loading, 
-            key = tilePoint.x + ':' + tilePoint.y;
+    createTile: function (coords) {
+         var tile = document.createElement('div'),
+            key = this._tileCoordsToKey(coords),
+            vectorTile;
 
         tile.style.backgroundColor = 'rgba(128, 128, 128, 0.3)';
         tile.style.border = '1px solid rgba(128, 128, 128, 0.8)';
         tile.style.boxSizing = 'border-box';
+        tile.style.MozBoxSizing = 'border-box';
+
+        L.DomUtil.addClass(tile, 'leaflet-tile-loaded');
 
         if (!this._loadingTiles[key]) {
             this._hide(tile);
         }
 
-        // check for already loading tiles, because initial tileloading
+        // check for already loading tiles, because initial tileloadstart
         // events might have been missed when layer is added
         if (this._adding) {
-            vecTile = this.vectorLayer._tiles[key];
-            loading = vecTile && vecTile.loading;
-            if (loading) {
+            vectorTile = this.vectorLayer._tiles[key];
+            if (vectorTile && vectorTile.loading) {
                 this._show(tile);
             }
         }
+
+        return tile;
+    },
+            
+    _tileReady: function (err, tile) {
+        // override to disable adding leaflet-tile-loaded class
     },
 
-    _updateZoom: function() {
-        if (this.options.tileSize != this.vectorLayer.options.tileSize) {
-            this.options.tileSize = this.vectorLayer.options.tileSize;
-            this.options.zoomOffset = this.vectorLayer.options.zoomOffset;
-        }
-    },
-
-    _onVecRemove: function(evt) {
+    _onVectorLayerRemove: function(evt) {
         if (evt.layer === this.vectorLayer) {
             this._hideAll();
         }
@@ -79,9 +68,8 @@ L.TileLayer.Progress = L.TileLayer.Div.extend({
         }
     },
 
-    _onTileLoading: function(evt) {
-        var key = evt.tile.key,
-            tile = this._tiles[key];
+    onTileLoadStart: function(key) {
+        var tile = this._tiles[key];
         if (tile) {
             this._show(tile);
         } else {
@@ -89,16 +77,18 @@ L.TileLayer.Progress = L.TileLayer.Div.extend({
         }
     },
 
-    _onTileLoad: function(evt) {
-        var key = evt.tile.key,
-            tile = this._tiles[key];
+    onTileLoad: function(key) {
+        var tile = this._tiles[key];
         this._hide(tile);
         delete this._loadingTiles[key];
     },
 
-    _onTileError: function(evt) {
-        var key = evt.tile.key,
-            tile = this._tiles[key];
+    onTileUnload: function(key) {
+        this.onTileLoad(key);
+    },
+
+    onTileError: function(key) {
+        var tile = this._tiles[key];
         if (tile) {
             tile.style.backgroundColor = 'rgba(128, 128, 128, 0.7)';
             tile.style.border = 'none';

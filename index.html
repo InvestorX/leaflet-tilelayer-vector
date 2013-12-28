@@ -4,12 +4,10 @@
     <title>Leaflet vector tile layer example</title>
     <meta charset="utf-8" />
 
-    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css" />
-    <!--[if lte IE 8]>
-        <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.ie.css" />
-    <![endif]-->
+     <link rel="stylesheet" href="bower_components/leaflet/leaflet.css" />
     <link rel="stylesheet" href="http://leaflet.github.io/Leaflet.label/leaflet.label.css" />
-    <script src="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js"></script>
+
+    <script src="bower_components/leaflet/leaflet.js"></script>
     <script src="http://leaflet.github.io/Leaflet.label/leaflet.label.js"></script>
     <script src="lib/communist.min.js"></script>
 
@@ -17,11 +15,13 @@
     <script src="TileQueue.js"></script>
     <script src="AbstractWorker.js"></script>
     <script src="CommunistWorker.js"></script>
+    <script src="Request.js"></script>
+    <script src="TileRequest.js"></script>
     <script src="TileLayer.GeoJSON.js"></script>
     <script src="TileLayer.Vector.Unclipped.js"></script>
-    <script src="TileLayer.Vector.Debug.js"></script>
     <script src="TileLayer.Div.js"></script>
     <script src="TileLayer.Progress.js"></script>
+    <script src="TileLayer.Debug.js"></script>
     <script src="TileLayer.Overzoom.js"></script>
     <script src="Leaflet.label-patch.js"></script>
 
@@ -80,7 +80,8 @@
             mouseout: resetHighlight
         });
         if (feature.properties) {
-            layer.bindLabel(feature.properties.name);
+            // TODO disabled due to error with Leaflet master (0.8-dev)
+            //layer.bindLabel(feature.properties.name);
             layer.bindPopup(feature.id + '<br>' + feature.properties.name);
         }
     }
@@ -105,6 +106,8 @@
         // no tile loading while panning (slow with large vector tiles)
         updateWhenIdle: true,
         serverZooms: [3,4,5,6,7],
+        //serverZooms: [3,5,7],
+        //maxNativeZoom: 7,
         minZoom: 2
     };
     var vector = new L.TileLayer.Vector(url, options, vectorOptions);
@@ -118,24 +121,24 @@
     };
     var unclipped = new L.TileLayer.Vector.Unclipped(url, unclippedOptions, vectorOptions);
 
-    // debug layer (full layer, not an overlay yet)
-    var debug = new L.TileLayer.Vector.Debug(url, options, vectorOptions);
-    
     var progress = new L.TileLayer.Progress(vector);
+    var debug = new L.TileLayer.Debug(vector);
 
     var map = L.map('map', {
         center: new L.LatLng(38.617, -100.261),
         zoom: 5,
-        layers: [background, vector, progress] 
+        layers: [background, vector, progress]
     });
 
     var overlayMaps = {
         'Vector': vector,
-        'Vector.Unclipped': unclipped,
-        'Vector.Debug': debug
+        'Vector.Unclipped': unclipped
     };
     // add as base to switch with radio instead of checkbox
-    L.control.layers(overlayMaps, {'Progress (Vector)': progress}, {
+    L.control.layers(overlayMaps, {
+        'Progress (Vector)': progress,
+        'Debug (Vector)': debug
+    }, {
         collapsed: false
     }).addTo(map);
     </script>
