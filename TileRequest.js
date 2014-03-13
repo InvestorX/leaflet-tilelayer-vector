@@ -1,11 +1,11 @@
-L.TileRequest = function(layer, ajax) {
-    this._layer = layer;
+L.TileRequest = function(evented, ajax) {
+    this._evented = evented;
     this._ajax = ajax;
 };
 
 L.TileRequest.prototype = {
     process: function (tile, done) {
-        this._layer.fire('tilerequest', {tile: tile});
+        this._evented.fire('tilerequest', {tile: tile});
         tile._request = this._ajax(tile.url, this._xhrHandler(tile, done));
     },
 
@@ -16,7 +16,7 @@ L.TileRequest.prototype = {
                 // check if request is about to be aborted, avoid rare error when aborted while parsing
                 if (tile._request) {
                     tile._request = null;
-                    this._layer.fire('tileresponse', {tile: tile});
+                    this._evented.fire('tileresponse', {tile: tile});
                     tile.datum = data;
                     done(null, tile);
                 }
@@ -24,7 +24,7 @@ L.TileRequest.prototype = {
                 tile.loading = false;
                 tile._request = null;
 
-                this._layer.fire('tileerror', {tile: tile});
+                this._evented.fire('tileerror', {tile: tile});
                 done(err, tile);
             }
         }, this);
@@ -35,11 +35,11 @@ L.TileRequest.prototype = {
         if (req) {
             tile._request = null;
             req.abort();
-            this._layer.fire('tilerequestabort', {tile: tile});
+            this._evented.fire('tilerequestabort', {tile: tile});
         }
     }
 };
 
-L.tileRequest = function(layer, ajax) {
-    return new L.TileRequest(layer, ajax);
+L.tileRequest = function(evented, ajax) {
+    return new L.TileRequest(evented, ajax);
 };
