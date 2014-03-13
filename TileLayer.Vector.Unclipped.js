@@ -104,6 +104,7 @@ L.TileLayer.Vector.Unclipped = L.TileLayer.Vector.extend({
                 if (layer) {
                     this.vectorLayer.removeLayer(layer);
                 }
+                delete this.commonFeatures[featureKey];
             }
         }
     },

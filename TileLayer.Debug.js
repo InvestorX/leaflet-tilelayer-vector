@@ -52,15 +52,25 @@ L.TileLayer.Debug = L.TileLayer.Div.extend({
     },
 
     onTileLoad: function(key) {
-        console.log('loaded       : ' + key);
+        console.log('loaded       : ' + key + this._getUnclippedStats());
     },
 
     onTileUnload: function(key) {
-        console.log('unload       : ' + key);
+        console.log('unload       : ' + key + this._getUnclippedStats());
     },
-    
+
     _onMoveend: function(evt) {
         console.log('--- update ---');
+    },
+
+    _getUnclippedStats: function() {
+        var s = '';
+        if (this.vectorLayer.featureRefCounts && this.vectorLayer.commonFeatures) {
+            s += ' - refs = ' + Object.keys(this.vectorLayer.featureRefCounts).length;
+            s += ', commons = ' + Object.keys(this.vectorLayer.commonFeatures).length;
+            s += ', layers = ' + Object.keys(this.vectorLayer.vectorLayer._layers).length;
+        }
+        return s;
     }
 });
 
