@@ -71,13 +71,13 @@ L.TileLayer.Vector = L.TileLayer.extend({
         if (cached) {
             this._addTileData(tile);
         } else {
-            this._loadTile(tile, coords);
+            tile.url = this.getTileUrl(coords);
+            this._loadTile(tile);
         }
     },
 
-    _loadTile: function (tile, coords) {
-        var url = this.getTileUrl(coords);
-        this._tileRequest.get(url, tile, L.bind(function(err, tile) {
+    _loadTile: function (tile) {
+        this._tileRequest.process(tile, L.bind(function(err, tile) {
             if (!err) {
                 this._addTileData(tile);
             } else {

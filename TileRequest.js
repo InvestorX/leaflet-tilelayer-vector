@@ -4,9 +4,9 @@ L.TileRequest = function(layer, ajax) {
 };
 
 L.TileRequest.prototype = {
-    get: function (url, tile, done) {
+    process: function (tile, done) {
         this._layer.fire('tilerequest', {tile: tile});
-        tile._request = this._ajax(url, this._xhrHandler(tile, done));
+        tile._request = this._ajax(tile.url, this._xhrHandler(tile, done));
     },
 
     // XMLHttpRequest handler; closure over the XHR object, the layer, and the tile
