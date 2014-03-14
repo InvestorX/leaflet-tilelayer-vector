@@ -27,14 +27,14 @@ L.CommunistWorker = L.AbstractWorker.extend({
                     tile._worker = null;
                     tile.parsed = parsed;
                     tile.datum = null;
-                    callback(tile);
+                    callback(null, tile);
                 } else {
                     // tile has been unloaded, don't continue with adding
                     //console.log('worker aborted ' + tile.key);
                 }
             });
         } else {
-            callback(tile);
+            callback(null, tile);
         }
     },
     

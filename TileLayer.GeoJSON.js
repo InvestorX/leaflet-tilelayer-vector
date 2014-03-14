@@ -106,8 +106,15 @@ L.TileLayer.Vector = L.TileLayer.extend({
 
     _addTileData: function(tile) {
         if (!tile.parsed) {
-            this._worker.process(tile, L.bind(function(tile) {
-                this._addQueue.add(tile);
+            this._worker.process(tile, L.bind(function(err, tile) {
+                if (!err) {
+                    this._addQueue.add(tile);
+                } else {
+                    // TODO refactor, copied from TileRequest, needed when plain request in worker
+                    tile.loading = false;
+                    this.fire('tileerror', {tile: tile});
+                    this._tileLoaded();
+                }
             },this));
         } else {
             // from cache

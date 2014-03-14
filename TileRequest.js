@@ -43,3 +43,13 @@ L.TileRequest.prototype = {
 L.tileRequest = function(evented, ajax) {
     return new L.TileRequest(evented, ajax);
 };
+
+// dummy request (= no request)
+L.noRequest = function () {
+    return {
+        process: function (tile, done) {
+            return done(null, tile);
+        },
+        abort: function() {}
+    };
+};
