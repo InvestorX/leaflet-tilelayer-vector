@@ -11,12 +11,16 @@ L.TileLayer.Debug = L.TileLayer.Div.extend({
 
     onAdd: function (map) {
         map.on('moveend', this._onMoveend, this);
+        this.vectorLayer.on('loading', this.onLoading, this);
+        this.vectorLayer.on('load', this.onLoad, this);
         L.TileLayer.Div.prototype.onAdd.apply(this, arguments);
     },
 
     onRemove: function (map) {
         L.TileLayer.Div.prototype.onRemove.apply(this, arguments);
         map.off('moveend', this._onMoveend, this);
+        this.vectorLayer.off('loading', this.onLoading, this);
+        this.vectorLayer.off('load', this.onLoad, this);
     },
 
     createTile: function (coords) {
@@ -52,7 +56,8 @@ L.TileLayer.Debug = L.TileLayer.Div.extend({
     },
 
     onTileLoad: function(key) {
-        console.log('loaded       : ' + key + this._getUnclippedStats());
+        console.log('loaded       : ' + key + ' - ' + this.vectorLayer._tilesToLoad 
+            + this._getUnclippedStats());
     },
 
     onTileUnload: function(key) {
@@ -61,6 +66,21 @@ L.TileLayer.Debug = L.TileLayer.Div.extend({
 
     _onMoveend: function(evt) {
         console.log('--- update ---');
+    },
+    
+    onLoading: function() {
+        console.log('--- loading ---');
+        if (console.time) {
+            console.time('load');
+        }
+    },
+
+    onLoad: function() {
+        if (console.time) {
+            console.timeEnd('load');
+        } else {
+            console.log('--- load ---');
+        }
     },
 
     _getUnclippedStats: function() {
